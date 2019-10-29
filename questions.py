@@ -26,18 +26,7 @@ for row in question_ids:
 str_in = ','.join(list_in)
 question_ids.close()
 
-conn = pymysql.connect(
-    host=MYSQL_HOST,
-    user=MYSQL_USER,
-    password=MYSQL_PASSWD,
-    port=int(MYSQL_PORT),
-    db=MYSQL_DB,
-    charset='ujis',
-    cursorclass=pymysql.cursors.DictCursor)
-
-try:
-    with conn.cursor() as cursor:
-        sql = '''
+sql = '''
 SELECT
   IF(questions.question_id > 0, 'Q', 'error') AS QAflag,
   questions.user_id AS user_id,
@@ -59,8 +48,8 @@ SELECT
   IF(ISNULL(user_province.profile_value) OR TRIM(user_province.profile_value) = '' OR ISNULL(province.name), '不明', province.name) AS province,
   IF(ISNULL(user_province.profile_value) OR TRIM(user_province.profile_value) = '' OR ISNULL(province.region), '不明', province.region) AS region,
   IF(ISNULL(user_occupation.profile_value) OR TRIM(user_occupation.profile_value) = '' OR ISNULL(occupation.name), '不明', occupation.name) AS occupation,
-  CONCAT('"', REPLACE(REPLACE(REPLACE(questions.question_title, '"', ''), '\t', '    '), '\0', ''), '"') AS title,
-  CONCAT('"', REPLACE(REPLACE(REPLACE(questions.question_text, '"', ''), '\t', '    '), '\0', ''), '"') AS text, 
+  CONCAT('"', CAST(REPLACE(REPLACE(REPLACE(questions.question_title, '"', ''), '\t', '    '), '\0', '') AS CHAR CHARACTER SET sjis), '"') AS title,
+  CONCAT('"', CAST(REPLACE(REPLACE(REPLACE(questions.question_text, '"', ''), '\t', '    '), '\0', '') AS CHAR CHARACTER SET sjis), '"') AS text, 
   '-' AS bestanswer,
   questions.question_id AS incident_id
 FROM 
@@ -144,7 +133,19 @@ FROM
   ) AS user_age ON (questions.question_id = user_age.question_id)
 WHERE
   questions.question_id IN ({0})
-        '''.format(str_in)
+'''.format(str_in)
+
+conn = pymysql.connect(
+    host=MYSQL_HOST,
+    user=MYSQL_USER,
+    password=MYSQL_PASSWD,
+    port=int(MYSQL_PORT),
+    db=MYSQL_DB,
+    charset='ujis',
+    cursorclass=pymysql.cursors.DictCursor)
+
+try:
+    with conn.cursor() as cursor:
         start = time.time()
         cursor.execute(sql)
         elapsed_time = time.time() - start
